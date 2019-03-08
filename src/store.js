@@ -2,6 +2,7 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import axios from 'axios'
 import router from './router.js'
+import Food from './models/food.js'
 
 let _apiCal = axios.create({
   baseURL: 'https://trackapi.nutritionix.com/v2/natural/nutrients',
@@ -22,7 +23,9 @@ export default new Vuex.Store({
   state: {
     searchData: [],
     curLogFoods: [],
-    curLog: {}
+    curLog: {},
+    allLogs: [],
+    inspectingLog: {}
   },
   mutations: {
     searchData(state, data) {
@@ -33,6 +36,12 @@ export default new Vuex.Store({
     },
     curLogFoods(state, data) {
       state.curLogFoods = data
+    },
+    setAllLogs(state, data) {
+      state.allLogs = data
+    },
+    setInspectingLog(state, data) {
+      state.inspectingLog = data
     }
   },
   actions: {
@@ -41,10 +50,20 @@ export default new Vuex.Store({
       dispatch
     }, query) {
       _apiCal.post('', query).then(res => {
-        commit('searchData', res.data.foods)
+        let data = res.data.foods.map(f => new Food(f))
+        commit('searchData', data)
         router.push({
           name: 'Results'
         })
+      })
+    },
+    getAllLogs({
+      commit,
+      dispatch,
+      state
+    }) {
+      _apiDb.get('/logs').then(res => {
+        commit('setAllLogs', res.data.data)
       })
     },
     getOnelog({
@@ -52,7 +71,19 @@ export default new Vuex.Store({
       dispatch
     }, id) {
       _apiDb.get('/logs/' + id).then(res => {
-        commit('curLogFoods', res.data.foods)
+        commit('makeNewLog', res.data.data)
+        commit('curLogFoods', res.data.data.foods)
+      })
+    },
+    getPastLog({
+      commit,
+      dispatch
+    }, id) {
+      _apiDb.get('/logs/' + id).then(res => {
+        commit('setInspectingLog', res.data.data)
+        router.push({
+          name: 'Details'
+        })
       })
     },
     addToLog({
@@ -60,11 +91,9 @@ export default new Vuex.Store({
       dispatch,
       state
     }, food) {
-      if (!state.curLog.date) {
-        dispatch('makeNewLog')
-      }
-      _apiDb.post('/logs/' + state.curLog._id, food).then(res => {
-        dispatch('getOnelog', res.data._id)
+      _apiDb.post('/logs/' + state.curLog._id + '/foods', food).then(res => {
+        dispatch('getOnelog', res.data.data._id)
+
       })
     },
     makeNewLog({

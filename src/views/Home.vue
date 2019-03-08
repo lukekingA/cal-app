@@ -1,13 +1,15 @@
 <template>
   <div class="home">
     <search></search>
-
+    <logs></logs>
   </div>
 </template>
 
 
 <script>
   import Search from '@/components/Search.vue'
+  import Logs from '@/components/Logs.vue'
+
   export default {
     name: 'home',
     data() {
@@ -15,8 +17,12 @@
     },
     computed: {},
     methods: {},
+    mounted() {
+      this.$store.dispatch('getAllLogs')
+    },
     components: {
-      Search
+      Search,
+      Logs
     }
   }
 </script>
